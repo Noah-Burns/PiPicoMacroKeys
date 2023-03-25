@@ -1,61 +1,66 @@
 import time
 import usb_hid
-from adafruit_hid.keycode import Keycode
-from adafruit_hid.keyboard import Keyboard
+from adafruit_hid.keycode import Keycode as kc
+from adafruit_hid.keyboard import Keyboard as kb
+from adafruit_hid.mouse import Mouse as mo
 import board
 import digitalio
 
+btnList = [
+    digitalio.DigitalInOut(board.GP1),
+    digitalio.DigitalInOut(board.GP2),
+    digitalio.DigitalInOut(board.GP3),
+    digitalio.DigitalInOut(board.GP4),
+    digitalio.DigitalInOut(board.GP5),
+    digitalio.DigitalInOut(board.GP6)
+]
 
-btn1_pin = board.GP9
-btn2_pin = board.GP8
-btn3_pin = board.GP7
-btn4_pin = board.GP19
-btn5_pin = board.GP20
-btn6_pin = board.GP21
+myKb = kb(usb_hid.devices)
+myMo = mo(usb_hid.devices)
 
-btn1 = digitalio.DigitalInOut(btn1_pin)
-btn1.direction = digitalio.Direction.INPUT
-btn1.pull = digitalio.Pull.DOWN
+def btn1_macro():
+    myMo.click(mo.MIDDLE_BUTTON)
+    myMo.click(mo.MIDDLE_BUTTON)
 
-btn2 = digitalio.DigitalInOut(btn2_pin)
-btn2.direction = digitalio.Direction.INPUT
-btn2.pull = digitalio.Pull.DOWN
+def btn2_macro():
+    myKb.send(kc.TWO)
 
-btn3 = digitalio.DigitalInOut(btn3_pin)
-btn3.direction = digitalio.Direction.INPUT
-btn3.pull = digitalio.Pull.DOWN
+def btn3_macro():
+    myKb.send(kc.THREE)
 
-btn4 = digitalio.DigitalInOut(btn4_pin)
-btn4.direction = digitalio.Direction.INPUT
-btn4.pull = digitalio.Pull.DOWN
+def btn4_macro():
+    myKb.send(kc.FOUR)
 
-btn5 = digitalio.DigitalInOut(btn5_pin)
-btn5.direction = digitalio.Direction.INPUT
-btn5.pull = digitalio.Pull.DOWN
+def btn5_macro():
+    myKb.send(kc.FIVE)
 
-btn6 = digitalio.DigitalInOut(btn6_pin)
-btn6.direction = digitalio.Direction.INPUT
-btn6.pull = digitalio.Pull.DOWN
+def btn6_macro():
+    myKb.send(kc.SIX)
 
-keyboard = Keyboard(usb_hid.devices)
+macrosList = [
+    btn1_macro,
+    btn2_macro,
+    btn3_macro,
+    btn4_macro,
+    btn5_macro,
+    btn6_macro,
+]
+keyZipList = list(zip(btnList, macrosList))
+
+for btn in btnList: 
+    btn.direction = digitalio.Direction.INPUT
+    btn.pull = digitalio.Pull.DOWN
+
+isListening = { ii: False for ii in range(len(btnList)) }
 
 while True:
-    if btn1.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F7)
-        time.sleep(0.1)
-    if btn2.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F8)
-        time.sleep(0.1)
-    if btn3.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F9)
-        time.sleep(0.1)
-    if btn4.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F10)
-        time.sleep(0.1)
-    if btn5.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F11)
-        time.sleep(0.1)
-    if btn6.value:
-        keyboard.send(Keycode.CONTROL, Keycode.F12)
-        time.sleep(0.1)
-    time.sleep(0.1)
+    for ii, keyTup in enumerate(keyZipList):
+        iiBtn, iiMacro = keyTup
+
+        if isListening[ii]:
+            if iiBtn.value:
+                iiMacro()
+                isListening[ii] = False
+        else:
+            if not iiBtn.value:
+                isListening[ii] = True
